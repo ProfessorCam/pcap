@@ -81,7 +81,8 @@ machine is on the lab network. The lab network is set in `site/lessons.js`:
 var SITE = { labName: 'Lab WiFi', labNetwork: '192.168.110.0/23', dhcpScope: '192.168.110.0/24' };
 ```
 
-`SITE.menu` in the same file defines the site menu behind the hamburger button in the sidebar. Items
+`SITE.menu` in the same file defines the site menu behind the thin rail on the far left; clicking
+anywhere on the rail slides the menu out. Items
 with `href: null` are shown greyed out as "coming soon" until that site exists; put its URL in `href`
 to turn it into a link. The panel closes when a site is chosen, on a click elsewhere, on Escape, or
 when the mouse leaves it for a moment.

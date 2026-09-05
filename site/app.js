@@ -12,7 +12,7 @@
     });
   }
 
-  /* ---------- expanding site menu (hamburger in the sidebar) ---------- */
+  /* ---------- expanding site menu (the whole left rail is the button) ---------- */
 
   function buildMenu() {
     var panel = document.getElementById('sitemenu'), btn = document.getElementById('menu-btn');
