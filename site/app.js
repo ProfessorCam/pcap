@@ -12,15 +12,37 @@
     });
   }
 
-  /* ---------- top menu ---------- */
+  /* ---------- expanding site menu (hamburger in the sidebar) ---------- */
 
   function buildMenu() {
-    var el = document.getElementById('topmenu');
-    if (!el || !SITE.menu) return;
-    el.innerHTML = SITE.menu.map(function (m) {
-      if (!m.href) return '<span class="menu-item soon" title="Not built yet"><span>' + esc(m.label) + '</span><small>coming soon</small></span>';
-      return '<a class="menu-item' + (m.current ? ' current' : '') + '" href="' + esc(m.href) + '"' + (m.current ? ' aria-current="page"' : '') + '>' + esc(m.label) + '</a>';
+    var panel = document.getElementById('sitemenu'), btn = document.getElementById('menu-btn');
+    if (!panel || !btn || !SITE.menu) return;
+    panel.innerHTML = '<div class="sitemenu-title">Sites</div>' + SITE.menu.map(function (m) {
+      if (!m.href) return '<span class="menu-item soon"><span>' + esc(m.label) + '</span><small>coming soon</small></span>';
+      return '<a class="menu-item' + (m.current ? ' current' : '') + '" href="' + esc(m.href) + '"' + (m.current ? ' aria-current="page"' : '') + '>' + esc(m.label) + (m.current ? '<small>you are here</small>' : '') + '</a>';
     }).join('');
+
+    var leaveTimer = null;
+    function setOpen(open) {
+      panel.classList.toggle('open', open);
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.setAttribute('aria-label', open ? 'Close site menu' : 'Open site menu');
+      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+    }
+    function isOpen() { return panel.classList.contains('open'); }
+
+    btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(!isOpen()); });
+    panel.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (e.target.closest('a.menu-item')) setOpen(false);   /* chose a site */
+    });
+    document.addEventListener('click', function () { if (isOpen()) setOpen(false); });          /* clicked elsewhere */
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && isOpen()) { setOpen(false); btn.focus(); } });
+    /* not in use: mouse wandered off the menu for a moment */
+    panel.addEventListener('mouseleave', function () { if (isOpen()) leaveTimer = setTimeout(function () { setOpen(false); }, 1200); });
+    panel.addEventListener('mouseenter', function () { if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; } });
+    panel.addEventListener('focusout', function (e) { if (!panel.contains(e.relatedTarget) && e.relatedTarget !== btn) setOpen(false); });
   }
 
   /* ---------- left column ---------- */

@@ -8,14 +8,16 @@
 </head>
 <body>
   <div class="app">
-    <header class="topbar">
-      <a href="#" class="topbar-brand"><span class="logo" aria-hidden="true">&#9673;</span> Packet Lessons</a>
-      <nav id="topmenu" class="topmenu" aria-label="Sites"></nav>
-    </header>
     <aside class="side">
       <div class="brand">
-        <a href="#" class="brand-link">Protocols</a>
-        <p class="brand-sub">Click a packet type to learn what it does.</p>
+        <div class="brand-row">
+          <button id="menu-btn" class="menu-btn" type="button" aria-label="Open site menu" aria-expanded="false" aria-controls="sitemenu">
+            <span></span><span></span><span></span>
+          </button>
+          <a href="#" class="brand-link"><span class="logo" aria-hidden="true">&#9673;</span><span>Packet Lessons</span></a>
+        </div>
+        <p class="brand-sub"><b>Protocols.</b> Click a packet type to learn what it does.</p>
+        <nav id="sitemenu" class="sitemenu" aria-label="Sites"></nav>
       </div>
       <nav id="nav" class="nav" aria-label="Packet types"></nav>
       <div class="side-foot">
