@@ -20,7 +20,7 @@
     panel.innerHTML = '<div class="sitemenu-title">Sites</div>' + SITE.menu.map(function (m) {
       if (!m.href) return '<span class="menu-item soon"><span>' + esc(m.label) + '</span><small>coming soon</small></span>';
       return '<a class="menu-item' + (m.current ? ' current' : '') + '" href="' + esc(m.href) + '"' + (m.current ? ' aria-current="page"' : '') + '>' + esc(m.label) + (m.current ? '<small>you are here</small>' : '') + '</a>';
-    }).join('');
+    }).join('') + '<div class="sitemenu-foot">Click anywhere else, or press Escape, to close.</div>';
 
     var leaveTimer = null;
     function setOpen(open) {

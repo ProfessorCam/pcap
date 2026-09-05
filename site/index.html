@@ -8,16 +8,18 @@
 </head>
 <body>
   <div class="app">
+    <aside class="rail">
+      <button id="menu-btn" class="menu-btn" type="button" aria-label="Open site menu" aria-expanded="false" aria-controls="sitemenu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="rail-label" aria-hidden="true">Sites</div>
+      <div class="rail-logo" aria-hidden="true">&#9673;</div>
+    </aside>
+    <nav id="sitemenu" class="sitemenu" aria-label="Sites"></nav>
     <aside class="side">
       <div class="brand">
-        <div class="brand-row">
-          <button id="menu-btn" class="menu-btn" type="button" aria-label="Open site menu" aria-expanded="false" aria-controls="sitemenu">
-            <span></span><span></span><span></span>
-          </button>
-          <a href="#" class="brand-link"><span class="logo" aria-hidden="true">&#9673;</span><span>Packet Lessons</span></a>
-        </div>
+        <a href="#" class="brand-link"><span class="logo" aria-hidden="true">&#9673;</span><span>Packet Lessons</span></a>
         <p class="brand-sub"><b>Protocols.</b> Click a packet type to learn what it does.</p>
-        <nav id="sitemenu" class="sitemenu" aria-label="Sites"></nav>
       </div>
       <nav id="nav" class="nav" aria-label="Packet types"></nav>
       <div class="side-foot">
