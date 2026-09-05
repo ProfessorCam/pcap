@@ -78,7 +78,7 @@ one Wi-Fi or Wired, shows IP, mask, network, broadcast, gateway and MAC, and say
 machine is on the lab network. The lab network is set in `site/lessons.js`:
 
 ```js
-var SITE = { labName: 'EPIC-CompSci-WiFi-5GHz', labNetwork: '192.168.110.0/23', dhcpScope: '192.168.110.0/24' };
+var SITE = { labName: 'Lab WiFi', labNetwork: '192.168.110.0/23', dhcpScope: '192.168.110.0/24' };
 ```
 
 `dhcpScope` is the part of the subnet the DHCP server actually leases from; the page shows the rest of
@@ -88,7 +88,7 @@ the subnet as "static only". The DHCP capture's subnet-mask option was corrected
 ```js
 ```
 
-**EPIC-CompSci-WiFi-5GHz** (the section is titled with `labName`) lists the hosts found in the captures.
+**Lab WiFi** (the section is titled with `labName`) lists the hosts found in the captures.
 Network, mask, broadcast and host range come from `labNetwork`; the hosts themselves are read from the
 packets: the DHCP Offer/ACK gives the client address, subnet mask, gateway and DNS servers;
 the broadcast address is calculated from address and mask; MAC addresses come from the frames and ARP
@@ -108,6 +108,15 @@ The parser understands Ethernet frames carrying ARP, IPv4 with ICMP, UDP (DNS on
 67/68, TFTP starting on port 69) and TCP (HTTP on port 80). Captures longer than 40 packets are
 folded in the table with a button to expand them. A lesson with `reassemble: 'tftp'` also rebuilds
 the transferred file from the DATA blocks and shows it above the table. Anything else still shows up in the table with a generic Info line.
+
+## Packet-assembly animations
+
+Four rows carry a looping animation that builds one packet layer by layer: the ping Echo Request
+(row 1), a DHCP Discover (row 2), a TCP SYN (row 3) and an ARP request (row 4). They are pure data in
+the `ANIMATIONS` table in `site/app.js`: a list of segments (name, byte count, width, field lines,
+optional `ghost: true` for a "this layer is absent" slot) and a list of stages (which segments are on,
+a caption, how long to hold). To add one, add an entry there and reference it from a lesson section
+with `anim: '<key>'`. Segment widths in a stage should add up to at most 96 so the gaps fit.
 
 ## Checking the parser from the command line
 

@@ -10,7 +10,10 @@
  *   layer     where the protocol lives in the stack
  *   command   the command that produced the capture (shown to students)
  *   oneLiner  the whole idea in one sentence
- *   sections  [{ h: heading, p: [paragraphs, may contain <b> <code>] }]
+ *   sections  [{ h: heading, p: [paragraphs, may contain <b> <code>],
+ *               anim: optional key from ANIMATIONS in app.js (a looping
+ *               packet-assembly diagram shown after the paragraphs),
+ *               after: optional paragraphs shown below the animation }]
  *   actors    [{ name, addr }] columns of the sequence diagram, left to right
  *   steps     [{ from, to, label, dashed }] to: actor index or 'all' (broadcast)
  *   lookFor   bullets pointing at concrete things in the packet table
@@ -19,7 +22,7 @@
  * recorded on; the welcome page compares the machine's live addresses against
  * it and uses it for the network, mask and broadcast of the captures section. */
 var SITE = {
-  labName: 'EPIC-CompSci-WiFi-5GHz',
+  labName: 'Lab WiFi',
   labNetwork: '192.168.110.0/23',
   /* DHCP only hands out leases from this part of the subnet; the rest of the
    * /23 (192.168.111.x) is in the same network but is never assigned by DHCP. */
@@ -102,6 +105,8 @@ var LESSONS = [
       ]},
       { h: 'Why DHCP has to use UDP', p: [
         'The client has no IP address and does not know where the server is. It cannot open a TCP connection to an unknown address. A broadcast UDP datagram to 255.255.255.255 is the only tool that works with no configuration at all.',
+        'Watch the Discover packet being built. Every layer has the same problem, "I do not know who I am talking to, and I have no address of my own", and each solves it the same way: broadcast.'
+      ], anim: 'dhcp-discover', after: [
         'After the ACK, the client uses ARP (row 4) to probe whether anyone else already has the address, then announces it. You can see both ARP packets at the end of this capture.'
       ]}
     ],
@@ -142,6 +147,8 @@ var LESSONS = [
         '1. <b>SYN</b>: the client says "I want to talk to port 80. My sequence numbers start at X." (SYN stands for synchronise.)',
         '2. <b>SYN, ACK</b>: the server replies "OK. My numbers start at Y, and I have received up to X+1."',
         '3. <b>ACK</b>: the client says "Got it, I have received up to Y+1." The connection is now open in both directions.',
+        'Here is the first of those three packets being built. Watch where the <b>port numbers</b> go: they are not in IP and not in Ethernet, they are TCP\'s job.'
+      ], anim: 'tcp-syn', after: [
         'Both sides also advertise options in the SYN packets: the biggest chunk they can accept (<b>MSS</b>), how much data they can buffer (<b>window size</b>) and whether they support selective acknowledgements (<b>SACK</b>).'
       ]},
       { h: 'Reading sequence numbers', p: [
@@ -188,8 +195,9 @@ var LESSONS = [
       { h: 'How ARP works', p: [
         '1. The sender broadcasts to every machine on the LAN (destination MAC ff:ff:ff:ff:ff:ff): "<b>Who has</b> 192.168.110.1? <b>Tell</b> 192.168.110.50."',
         '2. Only the owner of that IP answers, directly to the asker: "192.168.110.1 <b>is at</b> 00:50:56:c0:00:01."',
-        '3. The sender stores the answer in its <b>ARP cache</b> for a few minutes so it does not have to ask again for every packet. You can view the cache with <code>ip neigh</code> on Linux or <code>arp -a</code> on Windows.'
-      ]},
+        '3. The sender stores the answer in its <b>ARP cache</b> for a few minutes so it does not have to ask again for every packet. You can view the cache with <code>ip neigh</code> on Linux or <code>arp -a</code> on Windows.',
+        'Here is what one request looks like on the wire. Compare it with the ping packet in row 1: something is missing.'
+      ], anim: 'arp-request' },
       { h: 'ARP and the wider internet', p: [
         'ARP only works on the local network. When you send to an address outside it, your computer does not ARP for the far-away host. It ARPs for the <b>gateway</b> (the router) and hands the frame to the router\'s MAC, and the router takes it from there. That is exactly what packet 1 does: it looks up the gateway.'
       ]},

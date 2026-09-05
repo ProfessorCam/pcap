@@ -78,8 +78,25 @@
   /* Each animation: html() returns the markup, stages[] lists what is
    * switched on at each step (segment ids) with a caption and a hold time.
    * The loop runs until the lesson changes. */
+  function assemblyHtml(key, a) {
+    var h = ['<div class="asm" data-anim="' + key + '" aria-label="Animation: ' + esc(a.label) + '">'];
+    h.push('<div class="asm-caption"><span class="asm-dots">' + a.stages.map(function (s, i) { return '<i data-i="' + i + '"></i>'; }).join('') + '</span><span class="asm-text"></span></div>');
+    h.push('<div class="asm-bar">');
+    a.segments.forEach(function (g) {
+      h.push('<div class="seg seg-' + (g.color || g.id) + (g.ghost ? ' seg-ghost' : '') + '" data-seg="' + g.id + '" style="--w:' + g.width + '%">' +
+        '<div class="seg-name">' + esc(g.name) + '</div>' +
+        '<div class="seg-bytes">' + g.bytes + ' bytes</div>' +
+        '<div class="seg-fields">' + g.fields.map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('') + '</div></div>');
+    });
+    h.push('</div>');
+    h.push('<div class="asm-total"><span class="asm-total-label">Frame so far</span> <b class="asm-bytes">0</b> bytes</div>');
+    h.push('</div>');
+    return h.join('');
+  }
+
   var ANIMATIONS = {
     'icmp-assembly': {
+      label: 'how one ping packet is assembled',
       segments: [
         { id: 'eth',   name: 'Ethernet header', bytes: 14, width: 19, fields: ['dst 00:50:56:c0:00:01', 'src 00:0c:29:4b:1f:a2', 'type 0x0800 = IPv4'] },
         { id: 'ip',    name: 'IP header',       bytes: 20, width: 23, fields: ['from 192.168.110.50', 'to 192.168.110.1', 'protocol 1 = ICMP', 'TTL 64'] },
@@ -94,22 +111,60 @@
         { on: ['ip', 'icmp', 'data'],            hold: 3400, caption: 'IP wraps it in a 20-byte header: source and destination address, TTL 64, and protocol 1, which tells the receiver "an ICMP message is inside".' },
         { on: ['eth', 'ip', 'icmp', 'data'],     hold: 3600, caption: 'Ethernet adds the last 14 bytes: destination MAC, source MAC and type 0x0800 for IPv4. The finished frame is 98 bytes and goes on the wire.' },
         { on: ['eth', 'ip', 'icmp', 'data'], done: true, hold: 2600, caption: 'Sent. The Echo Reply is built the same way in the other direction, with ICMP type 0 and the same data. Then it starts again with the next sequence number.' }
+      ]
+    },
+
+    'dhcp-discover': {
+      label: 'how a DHCP Discover is assembled by a machine with no address',
+      segments: [
+        { id: 'eth',  name: 'Ethernet header', bytes: 14,  width: 19, fields: ['dst ff:ff:ff:ff:ff:ff', 'src 00:0c:29:4b:1f:a2', 'type 0x0800 = IPv4'] },
+        { id: 'ip',   name: 'IP header',       bytes: 20,  width: 22, fields: ['from 0.0.0.0', 'to 255.255.255.255', 'protocol 17 = UDP', 'TTL 64'] },
+        { id: 'udp',  name: 'UDP header',      bytes: 8,   width: 16, fields: ['src port 68', 'dst port 67', 'length 308', 'checksum'] },
+        { id: 'dhcp', name: 'DHCP message',    bytes: 300, width: 39, color: 'data', fields: ['op 1 = request, xid 0x3d1f7a44', 'client MAC 00:0c:29:4b:1f:a2', 'option 53: 1 = DISCOVER', 'option 55: mask, router, DNS'] }
       ],
-      html: function () {
-        var a = this, h = ['<div class="asm" data-anim="icmp-assembly" aria-label="Animation: how one ping packet is assembled">'];
-        h.push('<div class="asm-caption"><span class="asm-dots">' + a.stages.map(function (s, i) { return '<i data-i="' + i + '"></i>'; }).join('') + '</span><span class="asm-text"></span></div>');
-        h.push('<div class="asm-bar">');
-        a.segments.forEach(function (g) {
-          h.push('<div class="seg seg-' + g.id + (g.ghost ? ' seg-ghost' : '') + '" data-seg="' + g.id + '" style="--w:' + g.width + '%">' +
-            '<div class="seg-name">' + esc(g.name) + '</div>' +
-            '<div class="seg-bytes">' + (g.ghost ? '0 bytes' : g.bytes + ' bytes') + '</div>' +
-            '<div class="seg-fields">' + g.fields.map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('') + '</div></div>');
-        });
-        h.push('</div>');
-        h.push('<div class="asm-total"><span class="asm-total-label">Frame so far</span> <b class="asm-bytes">0</b> bytes</div>');
-        h.push('</div>');
-        return h.join('');
-      }
+      stages: [
+        { on: ['dhcp'],                     hold: 3200, caption: 'The message itself: "I am 00:0c:29:4b:1f:a2 and I need an address." Option 53 makes it a Discover, and a random transaction ID lets the client recognise the answers.' },
+        { on: ['udp', 'dhcp'],              hold: 3400, caption: 'UDP adds 8 bytes: from port 68 (DHCP client) to port 67 (DHCP server). No connection to set up, which is essential, because with no address the client could not open one anyway.' },
+        { on: ['ip', 'udp', 'dhcp'],        hold: 3800, caption: 'IP has a problem: the client has no address. So the source is 0.0.0.0, meaning "nobody yet", and the destination is 255.255.255.255, meaning "everybody on this network".' },
+        { on: ['eth', 'ip', 'udp', 'dhcp'], hold: 3800, caption: 'Ethernet has the same problem: the client does not know the server\'s MAC. So the destination is ff:ff:ff:ff:ff:ff, the broadcast address every network card listens for. 342 bytes, on the wire.' },
+        { on: ['eth', 'ip', 'udp', 'dhcp'], done: true, hold: 2800, caption: 'Every machine on the LAN receives this frame. Only DHCP servers act on it: they reply with an Offer, also broadcast, because the client still has no address to send to.' }
+      ]
+    },
+
+    'tcp-syn': {
+      label: 'how a TCP SYN is assembled and where the port numbers live',
+      segments: [
+        { id: 'eth',    name: 'Ethernet header', bytes: 14, width: 18, fields: ['dst 00:50:56:c0:00:01', 'src 00:0c:29:4b:1f:a2', 'type 0x0800 = IPv4'] },
+        { id: 'ip',     name: 'IP header',       bytes: 20, width: 21, fields: ['from 192.168.110.50', 'to 192.168.110.1', 'protocol 6 = TCP', 'TTL 64'] },
+        { id: 'tcp',    name: 'TCP header',      bytes: 20, width: 22, fields: ['src port 49832 (random)', 'dst port 80 (HTTP)', 'flags [SYN]', 'seq 3231822531 (random)', 'window 64240'] },
+        { id: 'opts',   name: 'TCP options',     bytes: 20, width: 17, fields: ['MSS 1460', 'SACK permitted', 'timestamps', 'window scale 7'] },
+        { id: 'nodata', name: 'Data',            bytes: 0,  width: 18, ghost: true, fields: ['none yet', 'sent only after', 'the handshake'] }
+      ],
+      stages: [
+        { on: ['nodata'],                             hold: 2800, caption: 'A SYN carries no application data at all. Its whole job is to agree on how to talk before anything is said.' },
+        { on: ['tcp', 'nodata'],                      hold: 4000, caption: 'The TCP header is where the ports live. Destination port 80 names the program on the server (a web server). Source port 49832 was picked at random by the client so replies find the right program on its side. The SYN flag is on and the sequence number starts at a random value.' },
+        { on: ['tcp', 'opts', 'nodata'],              hold: 3400, caption: '20 bytes of options ride along on a SYN: the biggest segment I can take (MSS 1460), window scaling, selective ACK and timestamps. The other side answers with its own.' },
+        { on: ['ip', 'tcp', 'opts', 'nodata'],        hold: 3400, caption: 'IP adds the addresses of the two machines and protocol 6, which tells the receiver "a TCP segment is inside". Addresses find the machine; ports find the program.' },
+        { on: ['eth', 'ip', 'tcp', 'opts'],           hold: 3600, caption: 'Ethernet adds the MACs for this hop on the LAN. The finished SYN is 74 bytes: 14 + 20 + 20 + 20, and not a single byte of data. On the wire.' },
+        { on: ['eth', 'ip', 'tcp', 'opts'], done: true, hold: 2800, caption: 'Sent. The server answers from port 80 back to port 49832 with a SYN-ACK built the same way, and only after the third packet does real data start to flow.' }
+      ]
+    },
+
+    'arp-request': {
+      label: 'how an ARP request is assembled without any IP header',
+      segments: [
+        { id: 'eth',  name: 'Ethernet header', bytes: 14, width: 22, fields: ['dst ff:ff:ff:ff:ff:ff', '= broadcast', 'src 00:0c:29:4b:1f:a2', 'type 0x0806 = ARP'] },
+        { id: 'noip', name: 'IP header',       bytes: 0,  width: 20, ghost: true, fields: ['none', 'ARP is not inside IP', 'it comes before IP'] },
+        { id: 'arp',  name: 'ARP message',     bytes: 28, width: 38, fields: ['opcode 1 = request', 'sender MAC 00:0c:29:4b:1f:a2', 'sender IP 192.168.110.50', 'target MAC 00:00:00:00:00:00 = blank', 'target IP 192.168.110.1'] },
+        { id: 'pad',  name: 'Padding',         bytes: 18, width: 16, fields: ['18 zero bytes', 'up to the 60-byte', 'Ethernet minimum'] }
+      ],
+      stages: [
+        { on: ['arp'],                 hold: 3600, caption: 'The question: "Who has 192.168.110.1? Tell 192.168.110.50." The sender fills in its own MAC and IP. The target MAC is all zeros: that is the blank it wants filled in.' },
+        { on: ['noip', 'arp'],         hold: 3800, caption: 'There is no IP header. ARP is not carried inside IP; it is the tool that makes IP delivery possible on a LAN, so it sits directly inside the Ethernet frame. No IP addresses in the outer packet, no TTL, no ports.' },
+        { on: ['eth', 'arp'],          hold: 3800, caption: 'Ethernet adds its header with type 0x0806, which means "ARP inside", and destination ff:ff:ff:ff:ff:ff. It has to be broadcast: the whole point is that the sender does not yet know the MAC it wants.' },
+        { on: ['eth', 'arp', 'pad'],   hold: 3400, caption: '14 + 28 = 42 bytes is below the 60-byte minimum an Ethernet frame must have, so 18 zero bytes are added at the end. That is why every ARP packet in the capture shows as 60 bytes.' },
+        { on: ['eth', 'arp', 'pad'], done: true, hold: 2800, caption: 'Every machine on the LAN reads it. Only 192.168.110.1 answers, and its reply goes straight back to 00:0c:29:4b:1f:a2, not broadcast, with the blank filled in.' }
+      ]
     }
   };
 
@@ -401,7 +456,7 @@
     lesson.sections.forEach(function (s) {
       h.push('<section><h2>' + esc(s.h) + '</h2>');
       s.p.forEach(function (p) { h.push('<p>' + p + '</p>'); });
-      if (s.anim && ANIMATIONS[s.anim]) h.push(ANIMATIONS[s.anim].html());
+      if (s.anim && ANIMATIONS[s.anim]) h.push(assemblyHtml(s.anim, ANIMATIONS[s.anim]));
       (s.after || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
       h.push('</section>');
     });
