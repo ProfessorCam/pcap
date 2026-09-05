@@ -43,7 +43,6 @@ body { font-family: var(--sans); color: var(--ink); background: var(--bg); font-
 .rail.open { background: #172035; }
 .rail-chevron { font-size: 26px; line-height: 1; color: #9dbcff; transition: transform .22s ease; }
 .rail.open .rail-chevron { transform: rotate(180deg); }
-.rail-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--side-muted); user-select: none; }
 .rail-logo { margin-top: auto; color: #6ea0ff; font-size: 20px; }
 
 /* The panel lives under the rail and slides out from beneath it, top to bottom. */
@@ -251,7 +250,6 @@ table.kv td { padding: 2px 0; font-family: var(--mono); font-size: 13px; }
   .rail { flex-direction: row; padding: 10px 14px; gap: 12px; position: sticky; top: 0; width: 100%; }
   .rail-chevron { transform: rotate(90deg); }
   .rail.open .rail-chevron { transform: rotate(-90deg); }
-  .rail-label { writing-mode: horizontal-tb; transform: none; }
   .rail-logo { margin-top: 0; margin-left: auto; }
   .sitemenu { position: fixed; top: 50px; bottom: auto; left: 0; width: 100%; transform: translateY(-110%); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
   .side { position: static; }
