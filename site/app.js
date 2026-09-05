@@ -12,6 +12,17 @@
     });
   }
 
+  /* ---------- top menu ---------- */
+
+  function buildMenu() {
+    var el = document.getElementById('topmenu');
+    if (!el || !SITE.menu) return;
+    el.innerHTML = SITE.menu.map(function (m) {
+      if (!m.href) return '<span class="menu-item soon" title="Not built yet"><span>' + esc(m.label) + '</span><small>coming soon</small></span>';
+      return '<a class="menu-item' + (m.current ? ' current' : '') + '" href="' + esc(m.href) + '"' + (m.current ? ' aria-current="page"' : '') + '>' + esc(m.label) + '</a>';
+    }).join('');
+  }
+
   /* ---------- left column ---------- */
 
   function buildNav() {
@@ -581,6 +592,7 @@
     document.title = (idx >= 0 ? LESSONS[idx].title + ' - ' : '') + 'Packet Lessons';
   }
 
+  buildMenu();
   buildNav();
   (function () { var c = document.getElementById('net-cidr'); if (c) c.textContent = SITE.labNetwork; })();
   window.addEventListener('hashchange', route);

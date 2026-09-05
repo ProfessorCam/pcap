@@ -26,7 +26,14 @@ var SITE = {
   labNetwork: '192.168.110.0/23',
   /* DHCP only hands out leases from this part of the subnet; the rest of the
    * /23 (192.168.111.x) is in the same network but is never assigned by DHCP. */
-  dhcpScope: '192.168.110.0/24'
+  dhcpScope: '192.168.110.0/24',
+  /* Top menu. href null = not built yet (shown greyed out, "coming soon");
+   * current: true marks the site you are on. */
+  menu: [
+    { label: 'Frames & Packets', href: null },
+    { label: 'Protocols', href: '#', current: true },
+    { label: 'Encryption and Protocols', href: null }
+  ]
 };
 
 var LESSONS = [

@@ -81,6 +81,9 @@ machine is on the lab network. The lab network is set in `site/lessons.js`:
 var SITE = { labName: 'Lab WiFi', labNetwork: '192.168.110.0/23', dhcpScope: '192.168.110.0/24' };
 ```
 
+`SITE.menu` in the same file defines the top menu. Items with `href: null` are shown greyed out as
+"coming soon" until that site exists; put its URL in `href` to turn it into a link.
+
 `dhcpScope` is the part of the subnet the DHCP server actually leases from; the page shows the rest of
 the subnet as "static only". The DHCP capture's subnet-mask option was corrected to 255.255.254.0 with
 `tools/patch-dhcp-mask.py` so the packets agree with the real network.
