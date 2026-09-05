@@ -1,0 +1,8 @@
+services:
+  pcap-lessons:
+    build: .
+    container_name: pcap-lessons
+    # Share the host's network so the page can show the machine's real
+    # Wi-Fi / wired addresses. The site listens on port 8080 directly.
+    network_mode: host
+    restart: unless-stopped

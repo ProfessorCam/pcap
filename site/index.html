@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Packet Lessons</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <a href="#" class="brand-link">
+          <span class="logo" aria-hidden="true">&#9673;</span>
+          <span>Packet Lessons</span>
+        </a>
+        <p class="brand-sub">Click a packet type to learn what it does.</p>
+      </div>
+      <nav id="nav" class="nav" aria-label="Packet types"></nav>
+      <div class="side-foot">
+        Captures from the <span id="net-cidr">lab</span> network.<br>
+        Open any of them in Wireshark with the download button.
+      </div>
+    </aside>
+    <main id="main" class="main" aria-live="polite"></main>
+  </div>
+
+  <script src="pcap.js"></script>
+  <script src="lessons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
