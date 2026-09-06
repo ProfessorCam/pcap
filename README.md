@@ -10,9 +10,9 @@ in the right column:
    (click a packet to expand its details layer by layer),
 5. a download button so they can open the same capture in Wireshark.
 
-Rows: **1 Ping (ICMP)**, **2 UDP (DHCP DORA)**, **3 TCP (three-way handshake)**, **4 ARP**,
-**5 DNS (an A record lookup)**, **6 HTTP (DNS + TCP + HTTP for one web request)**,
-**7 TFTP (a file transfer, reassembled in the browser)**.
+Rows, grouped by layer: **ARP**, **Ping (ICMP)**, **UDP (DHCP DORA)**, **TCP (three-way handshake)**,
+**DNS (an A record lookup)**, **HTTP (DNS + TCP + HTTP for one web request)**,
+**TFTP (a file transfer, reassembled in the browser)**.
 
 No frameworks, no build step: plain HTML, CSS and JavaScript served by nginx in a Docker container.
 
@@ -64,7 +64,7 @@ The mechanism is `site/level.js`, identical on every Packet Lessons site. In `si
 piece of prose can be a plain string (same at every level) or an object with `s`, `m` and `e`
 keys, and arrays of paragraphs may mix the two. A missing key falls back to Moderate; an empty
 string leaves that paragraph out at that level. Rows refer to each other with `{{row:id}}`, which
-becomes "row N" when the page is drawn, so reordering rows never breaks the text. Each row's `stack`
+becomes the row's title in quotes when the page is drawn, so reordering rows never breaks the text. Each row's `stack`
 field (`2`, `3`, `4`, `7`, or a word such as `tls`) groups the sidebar by layer.
 
 ## Layout
@@ -145,8 +145,8 @@ the transferred file from the DATA blocks and shows it above the table. Anything
 
 ## Packet-assembly animations
 
-Four rows carry a looping animation that builds one packet layer by layer: an ARP request (row 1),
-the ping Echo Request (row 2), a DHCP Discover (row 3) and a TCP SYN (row 4). They are pure data in
+Four rows carry a looping animation that builds one packet layer by layer: an ARP request, the ping
+Echo Request, a DHCP Discover and a TCP SYN. They are pure data in
 the `ANIMATIONS` table in `site/app.js`: a list of segments (name, byte count, width, field lines,
 optional `ghost: true` for a "this layer is absent" slot) and a list of stages (which segments are on,
 a caption, how long to hold). To add one, add an entry there and reference it from a lesson section

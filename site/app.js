@@ -66,7 +66,6 @@
       b.type = 'button';
       b.dataset.id = l.id;
       b.innerHTML =
-        '<span class="num">' + (i + 1) + '</span>' +
         '<span class="text"><span class="title">' + esc(l.title) + '</span>' +
         '<span class="sub">' + esc(l.subtitle) + '</span></span>' +
         (l.stack !== undefined ? '<span class="lay">' + esc(l.chip || STACK_CHIPS[l.stack] || l.stack) + '</span>' : '');
@@ -550,7 +549,7 @@
   function renderLesson(lesson, index) {
     var h = [];
     h.push('<article class="lesson" id="lesson-' + lesson.id + '">');
-    h.push('<p class="crumb">Row ' + (index + 1) + ' of ' + LESSONS.length + '</p>');
+    h.push('<p class="crumb">' + esc(STACK_GROUPS[lesson.stack] || 'Lesson') + '</p>');
     h.push('<h1>' + esc(lesson.title) + ' <small>' + esc(lesson.subtitle) + '</small></h1>');
     h.push('<p class="lead">' + esc(lv(lesson.oneLiner)) + '</p>');
     h.push('<div class="facts"><div><span class="k">Where it lives</span><span class="v">' + esc(lv(lesson.layer)) + '</span></div>');

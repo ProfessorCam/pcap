@@ -40,7 +40,7 @@ var SITE = {
 
 /* Reading levels: any prose entry below may be a plain string (same at every
  * level) or { s: ..., m: ..., e: ... } for Simple / Moderate / Engineer.
- * See level.js. {{row:id}} becomes "row N" when rendered. */
+ * See level.js. {{row:id}} becomes the row's title in quotes when rendered. */
 
 var LESSONS = [
   {
