@@ -122,7 +122,12 @@
         '<div class="seg-fields">' + g.fields.map(function (f) { return '<span>' + esc(f) + '</span>'; }).join('') + '</div></div>');
     });
     h.push('</div>');
-    h.push('<div class="asm-total"><span class="asm-total-label">Frame so far</span> <b class="asm-bytes">0</b> bytes</div>');
+    h.push('<div class="asm-foot"><div class="asm-ctl">' +
+      '<button type="button" class="asm-btn" data-act="prev" title="Back one step" aria-label="Back one step">&#9664;</button>' +
+      '<button type="button" class="asm-btn asm-toggle" data-act="toggle" title="Pause" aria-label="Pause">&#10074;&#10074;</button>' +
+      '<button type="button" class="asm-btn" data-act="next" title="Forward one step" aria-label="Forward one step">&#9654;</button>' +
+      '<span class="asm-step"></span></div>' +
+      '<div class="asm-total"><span class="asm-total-label">Frame so far</span> <b class="asm-bytes">0</b> bytes</div></div>');
     h.push('</div>');
     return h.join('');
   }
@@ -204,15 +209,21 @@
   var animTimers = [];
   function stopAnimations() { animTimers.forEach(clearTimeout); animTimers = []; }
 
+  /* Each animation loops on its own timer. The buttons under the bar pause it,
+   * or step one stage back or forward (stepping pauses, so the reader can
+   * take their time; play resumes the loop from that stage). */
   function startAnimations() {
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     Array.prototype.forEach.call(main.querySelectorAll('[data-anim]'), function (el) {
       var a = ANIMATIONS[el.dataset.anim];
       if (!a) return;
+      var n = a.stages.length;
       var segs = {}; Array.prototype.forEach.call(el.querySelectorAll('.seg'), function (s) { segs[s.dataset.seg] = s; });
       var text = el.querySelector('.asm-text'), dots = el.querySelectorAll('.asm-dots i'), bytesEl = el.querySelector('.asm-bytes');
-      function apply(i) {
-        var st = a.stages[i], total = 0;
+      var stepEl = el.querySelector('.asm-step'), toggleBtn = el.querySelector('.asm-toggle');
+      var i = 0, timer = null, playing = !reduce;
+      function apply(k) {
+        var st = a.stages[k], total = 0;
         a.segments.forEach(function (g) {
           var on = st.on.indexOf(g.id) >= 0;
           segs[g.id].classList.toggle('on', on);
@@ -221,17 +232,42 @@
         el.classList.toggle('done', !!st.done);
         text.textContent = st.caption;
         bytesEl.textContent = total;
-        Array.prototype.forEach.call(dots, function (d, j) { d.classList.toggle('on', j === i); });
+        stepEl.textContent = 'step ' + (k + 1) + ' of ' + n;
+        Array.prototype.forEach.call(dots, function (d, j) { d.classList.toggle('on', j === k); });
       }
-      if (reduce) { apply(a.stages.length - 1); return; }
-      var i = 0;
-      function step() {
-        apply(i);
-        var hold = a.stages[i].hold;
-        i = (i + 1) % a.stages.length;
-        animTimers.push(setTimeout(step, hold));
+      function clearTimer() {
+        if (timer === null) return;
+        clearTimeout(timer);
+        animTimers = animTimers.filter(function (t) { return t !== timer; });
+        timer = null;
       }
-      step();
+      function schedule() {
+        clearTimer();
+        if (!playing) return;
+        timer = setTimeout(function () { go((i + 1) % n); }, a.stages[i].hold);
+        animTimers.push(timer);
+      }
+      function go(k) { i = k; apply(i); schedule(); }
+      function setPlaying(p) {
+        playing = p;
+        el.classList.toggle('paused', !p);
+        toggleBtn.innerHTML = p ? '&#10074;&#10074;' : '&#9654;';
+        toggleBtn.title = p ? 'Pause' : 'Play';
+        toggleBtn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+        schedule();
+      }
+      el.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('[data-act], .asm-dots i') : null;
+        if (!b || !el.contains(b)) return;
+        if (b.dataset.act === 'toggle') { setPlaying(!playing); return; }
+        setPlaying(false);
+        if (b.dataset.act === 'prev') go((i - 1 + n) % n);
+        else if (b.dataset.act === 'next') go((i + 1) % n);
+        else if (b.dataset.i !== undefined) go(+b.dataset.i);
+      });
+      if (reduce) { i = n - 1; }
+      setPlaying(playing);
+      apply(i);
     });
   }
 
