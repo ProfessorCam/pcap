@@ -22,12 +22,13 @@ No frameworks, no build step: plain HTML, CSS and JavaScript served by nginx in 
 docker compose up -d --build
 ```
 
-Then open <http://localhost:8080>. Stop it with `docker compose down`.
+Then open <http://127.0.0.1:8080>. Stop it with `docker compose down`.
 
-Or run the published image from Docker Hub without cloning anything:
+Or run the published image from Docker Hub without cloning anything, in the foreground (Ctrl+C stops
+and removes it), then open <http://127.0.0.1:8080>:
 
 ```sh
-docker run -d --name pcap-lessons --network host --restart unless-stopped professorcam/pcap
+docker run --rm -it --name pcap-lessons --network host professorcryan/pcap
 ```
 
 The GitHub Pages copy shows this same command in place of the live network section, since a

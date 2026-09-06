@@ -293,8 +293,8 @@
       '<section id="runlocal-section" hidden>' +
       '<h2>See your own network on this page</h2>' +
       '<p class="hint">This copy of the site is static, so it cannot look at your interfaces. Run the same site as a Docker container on your own machine and this section turns into a live view of your Wi-Fi or wired IP address, mask, network, broadcast and gateway.</p>' +
-      '<pre class="cmd">docker run -d --name pcap-lessons --network host --restart unless-stopped ' + esc(SITE.image) + '</pre>' +
-      '<p class="hint">Then open <a href="http://localhost:' + SITE.port + '/">http://localhost:' + SITE.port + '/</a>. The container listens on port ' + SITE.port + ' with host networking, which is what lets it see the real interfaces. If you cannot use host networking (Docker Desktop on Mac or Windows without it enabled), <code>-p ' + SITE.port + ':' + SITE.port + '</code> instead of <code>--network host</code> still serves the lessons, but the live section will only see Docker\'s own network. Stop it with <code>docker rm -f pcap-lessons</code>.</p>' +
+      '<pre class="cmd">docker run --rm -it --name pcap-lessons --network host ' + esc(SITE.image) + '</pre>' +
+      '<p class="hint">Then open <a href="http://127.0.0.1:' + SITE.port + '/">http://127.0.0.1:' + SITE.port + '/</a> on that machine. The container listens on port ' + SITE.port + ' with host networking, which is what lets it see the real interfaces. If you cannot use host networking (Docker Desktop on Mac or Windows without it enabled), <code>-p ' + SITE.port + ':' + SITE.port + '</code> instead of <code>--network host</code> still serves the lessons, but the live section will only see Docker\'s own network. The container runs in the foreground; press Ctrl+C to stop it, and it removes itself.</p>' +
       '</section>' +
       '<h2>' + esc(SITE.labName) + '</h2>' +
       '<p class="hint">The lab network the captures were recorded on: ' + esc(SITE.labNetwork) + '. The hosts below are not typed in by hand; the page reads every capture and works them out from the packets themselves.</p>' +

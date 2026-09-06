@@ -22,7 +22,7 @@
  * recorded on; the welcome page compares the machine's live addresses against
  * it and uses it for the network, mask and broadcast of the captures section. */
 var SITE = {
-  image: 'professorcam/pcap',      /* Docker Hub image of this site; shown with a run command when the live section is unavailable */
+  image: 'professorcryan/pcap',      /* Docker Hub image of this site; shown with a run command when the live section is unavailable */
   port: 8080,
   labName: 'Lab WiFi',
   labNetwork: '192.168.110.0/23',
