@@ -52,6 +52,21 @@ itself automatically when `network.json` is not there, and the "connecting from"
 when `/whoami` does not answer. `.github/workflows/pages.yml` publishes `site/` to Pages on every
 push to `main`; enable it once under Settings > Pages > Source: GitHub Actions.
 
+## Reading level (Simple | Moderate | Engineer)
+
+The buttons at the top right of the page switch every explanation between three depths: **Simple**
+(a notch above "explain it like I'm five": the big idea in plain words), **Moderate** (beginner CCNA
+student, the default) and **Engineer** (the full technical detail, kept short). The choice is stored
+in the browser, and a link such as `index.html?level=simple` (or `moderate`, `engineer`) opens the
+site at that level.
+
+The mechanism is `site/level.js`, identical on every Packet Lessons site. In `site/lessons.js` any
+piece of prose can be a plain string (same at every level) or an object with `s`, `m` and `e`
+keys, and arrays of paragraphs may mix the two. A missing key falls back to Moderate; an empty
+string leaves that paragraph out at that level. Rows refer to each other with `{{row:id}}`, which
+becomes "row N" when the page is drawn, so reordering rows never breaks the text. Each row's `stack`
+field (`2`, `3`, `4`, `7`, or a word such as `tls`) groups the sidebar by layer.
+
 ## Layout
 
 ```
@@ -64,6 +79,7 @@ site/
   style.css          layout, diagram and packet-table styling
   app.js             builds the nav, renders a lesson, loads and shows the packets
   lessons.js         ALL teaching content lives here, one object per row
+  level.js           the Simple | Moderate | Engineer toggle and the lv() text resolver
   pcap.js            tiny libpcap parser (Ethernet, ARP, IPv4, ICMP, UDP, DNS, DHCP, TCP, HTTP)
   pcaps/*.pcap       the captures
 tools/make-captures.py  regenerates the two synthetic captures (DNS lookup, TFTP transfer)
@@ -118,7 +134,8 @@ returns the visitor's address so the page can also say where the browser is conn
 1. Save a capture in classic pcap format (in Wireshark: File > Save As > "Wireshark/tcpdump - pcap",
    not pcapng) into `site/pcaps/`.
 2. Append an object to the `LESSONS` array in `site/lessons.js`. The comment at the top of that file
-   lists every field. The order of the array is the order of the rows.
+   lists every field. The order of the array is the order of the rows; they run bottom-up through
+   the stack (ARP first, then ping, UDP, TCP, DNS, HTTP, TFTP) and the `stack` field groups them.
 3. Rebuild: `docker compose up -d --build`.
 
 The parser understands Ethernet frames carrying ARP, IPv4 with ICMP, UDP (DNS on port 53, DHCP on
@@ -128,8 +145,8 @@ the transferred file from the DATA blocks and shows it above the table. Anything
 
 ## Packet-assembly animations
 
-Four rows carry a looping animation that builds one packet layer by layer: the ping Echo Request
-(row 1), a DHCP Discover (row 2), a TCP SYN (row 3) and an ARP request (row 4). They are pure data in
+Four rows carry a looping animation that builds one packet layer by layer: an ARP request (row 1),
+the ping Echo Request (row 2), a DHCP Discover (row 3) and a TCP SYN (row 4). They are pure data in
 the `ANIMATIONS` table in `site/app.js`: a list of segments (name, byte count, width, field lines,
 optional `ghost: true` for a "this layer is absent" slot) and a list of stages (which segments are on,
 a caption, how long to hold). To add one, add an entry there and reference it from a lesson section

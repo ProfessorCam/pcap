@@ -4,6 +4,7 @@
 
   var nav = document.getElementById('nav');
   var main = document.getElementById('main');
+  var content = document.getElementById('content');
   var pcapCache = {};
 
   function esc(s) {
@@ -47,8 +48,19 @@
 
   /* ---------- left column ---------- */
 
+  var STACK_GROUPS = { 2: 'Layer 2 · Link', 3: 'Layer 3 · Network', 4: 'Layer 4 · Transport', 7: 'Layer 7 · Application', tls: 'Between 4 and 7 · TLS', files: 'Not packets · files', stack: 'All layers' };
+  var STACK_CHIPS = { 2: 'L2', 3: 'L3', 4: 'L4', 7: 'L7', tls: 'TLS', files: 'files', stack: 'L2–7' };
+
   function buildNav() {
+    var last = null;
     LESSONS.forEach(function (l, i) {
+      if (l.stack !== undefined && l.stack !== last) {
+        var g = document.createElement('div');
+        g.className = 'nav-group';
+        g.textContent = STACK_GROUPS[l.stack] || String(l.stack);
+        nav.appendChild(g);
+        last = l.stack;
+      }
       var b = document.createElement('button');
       b.className = 'row';
       b.type = 'button';
@@ -56,7 +68,8 @@
       b.innerHTML =
         '<span class="num">' + (i + 1) + '</span>' +
         '<span class="text"><span class="title">' + esc(l.title) + '</span>' +
-        '<span class="sub">' + esc(l.subtitle) + '</span></span>';
+        '<span class="sub">' + esc(l.subtitle) + '</span></span>' +
+        (l.stack !== undefined ? '<span class="lay">' + esc(l.chip || STACK_CHIPS[l.stack] || l.stack) + '</span>' : '');
       b.addEventListener('click', function () { location.hash = l.id; });
       nav.appendChild(b);
     });
@@ -143,12 +156,12 @@
         { id: 'data',  name: 'Ping data',       bytes: 56, width: 35, fields: ['56 bytes of filler', 'the reply must echo', 'these back unchanged'] }
       ],
       stages: [
-        { on: ['data'],                          hold: 2600, caption: 'Start with what ping wants to send: 56 bytes of filler data (usually a timestamp and a pattern of letters).' },
-        { on: ['icmp', 'data'],                  hold: 3400, caption: 'ICMP puts its 8-byte header in front: type 8 means Echo Request, plus an identifier and a sequence number so the reply can be matched up.' },
-        { on: ['ghost', 'icmp', 'data'],         hold: 3400, caption: 'This is where TCP or UDP would go for a web page or a DNS lookup. For ping there is nothing here: no port numbers, no connection.' },
-        { on: ['ip', 'icmp', 'data'],            hold: 3400, caption: 'IP wraps it in a 20-byte header: source and destination address, TTL 64, and protocol 1, which tells the receiver "an ICMP message is inside".' },
-        { on: ['eth', 'ip', 'icmp', 'data'],     hold: 3600, caption: 'Ethernet adds the last 14 bytes: destination MAC, source MAC and type 0x0800 for IPv4. The finished frame is 98 bytes and goes on the wire.' },
-        { on: ['eth', 'ip', 'icmp', 'data'], done: true, hold: 2600, caption: 'Sent. The Echo Reply is built the same way in the other direction, with ICMP type 0 and the same data. Then it starts again with the next sequence number.' }
+        { on: ['data'],                          hold: 2600, caption: { s: 'Start with what ping wants to send: a little filler data, 56 bytes.', m: 'Start with what ping wants to send: 56 bytes of filler data (usually a timestamp and a pattern of letters).', e: '56-byte payload: an 8-byte send timestamp followed by a repeating byte pattern (the Linux ping default).' } },
+        { on: ['icmp', 'data'],                  hold: 3400, caption: { s: 'ICMP puts a small label in front: "this is a ping request", plus a run number so the reply can be matched up.', m: 'ICMP puts its 8-byte header in front: type 8 means Echo Request, plus an identifier and a sequence number so the reply can be matched up.', e: 'ICMP header, 8 bytes: type 8, code 0, checksum, identifier 6699, sequence 1.' } },
+        { on: ['ghost', 'icmp', 'data'],         hold: 3400, caption: { s: 'This gap is where the "port" layer would go for a web page. Ping has none.', m: 'This is where TCP or UDP would go for a web page or a DNS lookup. For ping there is nothing here: no port numbers, no connection.', e: 'No transport header: ICMP is IP protocol 1 and has no ports.' } },
+        { on: ['ip', 'icmp', 'data'],            hold: 3400, caption: { s: 'IP adds the addresses: who it is from and who it is for.', m: 'IP wraps it in a 20-byte header: source and destination address, TTL 64, and protocol 1, which tells the receiver "an ICMP message is inside".', e: 'IPv4 header, 20 bytes: total length 84, TTL 64, protocol 1, source .50, destination .1, header checksum.' } },
+        { on: ['eth', 'ip', 'icmp', 'data'],     hold: 3600, caption: { s: 'Ethernet adds the card numbers for this hop. The finished frame is 98 bytes and goes on the wire.', m: 'Ethernet adds the last 14 bytes: destination MAC, source MAC and type 0x0800 for IPv4. The finished frame is 98 bytes and goes on the wire.', e: 'Ethernet header, 14 bytes: destination MAC, source MAC, EtherType 0x0800. 98 bytes on the wire plus a 4-byte FCS that is not captured.' } },
+        { on: ['eth', 'ip', 'icmp', 'data'], done: true, hold: 2600, caption: { s: 'Sent. The reply is built the same way coming back, then it all starts again with the next run number.', m: 'Sent. The Echo Reply is built the same way in the other direction, with ICMP type 0 and the same data. Then it starts again with the next sequence number.', e: 'Sent. The reply is type 0 with identical identifier, sequence and payload; the next request uses sequence 2.' } }
       ]
     },
 
@@ -156,16 +169,16 @@
       label: 'how a DHCP Discover is assembled by a machine with no address',
       segments: [
         { id: 'eth',  name: 'Ethernet header', bytes: 14,  width: 19, fields: ['dst ff:ff:ff:ff:ff:ff', 'src 00:0c:29:4b:1f:a2', 'type 0x0800 = IPv4'] },
-        { id: 'ip',   name: 'IP header',       bytes: 20,  width: 22, fields: ['from 0.0.0.0', 'to 255.255.255.255', 'protocol 17 = UDP', 'TTL 64'] },
+        { id: 'ip',   name: 'IP header',       bytes: 20,  width: 22, fields: ['from 0.0.0.0', 'to 255.255.255.255', 'protocol 17 = UDP', 'TTL 255'] },
         { id: 'udp',  name: 'UDP header',      bytes: 8,   width: 16, fields: ['src port 68', 'dst port 67', 'length 308', 'checksum'] },
         { id: 'dhcp', name: 'DHCP message',    bytes: 300, width: 39, color: 'data', fields: ['op 1 = request, xid 0x3d1f7a44', 'client MAC 00:0c:29:4b:1f:a2', 'option 53: 1 = DISCOVER', 'option 55: mask, router, DNS'] }
       ],
       stages: [
-        { on: ['dhcp'],                     hold: 3200, caption: 'The message itself: "I am 00:0c:29:4b:1f:a2 and I need an address." Option 53 makes it a Discover, and a random transaction ID lets the client recognise the answers.' },
-        { on: ['udp', 'dhcp'],              hold: 3400, caption: 'UDP adds 8 bytes: from port 68 (DHCP client) to port 67 (DHCP server). No connection to set up, which is essential, because with no address the client could not open one anyway.' },
-        { on: ['ip', 'udp', 'dhcp'],        hold: 3800, caption: 'IP has a problem: the client has no address. So the source is 0.0.0.0, meaning "nobody yet", and the destination is 255.255.255.255, meaning "everybody on this network".' },
-        { on: ['eth', 'ip', 'udp', 'dhcp'], hold: 3800, caption: 'Ethernet has the same problem: the client does not know the server\'s MAC. So the destination is ff:ff:ff:ff:ff:ff, the broadcast address every network card listens for. 342 bytes, on the wire.' },
-        { on: ['eth', 'ip', 'udp', 'dhcp'], done: true, hold: 2800, caption: 'Every machine on the LAN receives this frame. Only DHCP servers act on it: they reply with an Offer, also broadcast, because the client still has no address to send to.' }
+        { on: ['dhcp'],                     hold: 3200, caption: { s: 'The message: "I am this network card and I need an address."', m: 'The message itself: "I am 00:0c:29:4b:1f:a2 and I need an address." Option 53 makes it a Discover, and a random transaction ID lets the client recognise the answers.', e: 'DHCP message, 300 bytes: op 1, htype 1, xid 0x3d1f7a44, chaddr 00:0c:29:4b:1f:a2, option 53 = 1 (Discover), options 61, 12, 57 and 55.' } },
+        { on: ['udp', 'dhcp'],              hold: 3400, caption: { s: 'UDP adds the port numbers: from 68 (the one asking) to 67 (the server).', m: 'UDP adds 8 bytes: from port 68 (DHCP client) to port 67 (DHCP server). No connection to set up, which is essential, because with no address the client could not open one anyway.', e: 'UDP header, 8 bytes: source port 68, destination port 67, length 308, checksum.' } },
+        { on: ['ip', 'udp', 'dhcp'],        hold: 3800, caption: { s: 'IP has a problem: the computer has no address yet. So it writes "nobody" as the sender and "everybody" as the receiver.', m: 'IP has a problem: the client has no address. So the source is 0.0.0.0, meaning "nobody yet", and the destination is 255.255.255.255, meaning "everybody on this network".', e: 'IPv4 header: source 0.0.0.0, destination 255.255.255.255 (limited broadcast), protocol 17, total length 328.' } },
+        { on: ['eth', 'ip', 'udp', 'dhcp'], hold: 3800, caption: { s: 'Ethernet has the same problem: it does not know the server\'s card. So it sends to everyone. 342 bytes, on the wire.', m: 'Ethernet has the same problem: the client does not know the server\'s MAC. So the destination is ff:ff:ff:ff:ff:ff, the broadcast address every network card listens for. 342 bytes, on the wire.', e: 'Ethernet header: destination ff:ff:ff:ff:ff:ff, source 00:0c:29:4b:1f:a2, EtherType 0x0800. 342 bytes on the wire.' } },
+        { on: ['eth', 'ip', 'udp', 'dhcp'], done: true, hold: 2800, caption: { s: 'Every machine on the network receives it. Only address servers answer, also to everyone, because the new computer still has no address.', m: 'Every machine on the LAN receives this frame. Only DHCP servers act on it: they reply with an Offer, also broadcast, because the client still has no address to send to.', e: 'All hosts receive the frame; DHCP servers respond with DHCPOFFER, also broadcast, because the client has no address yet and set the broadcast flag.' } }
       ]
     },
 
@@ -179,12 +192,12 @@
         { id: 'nodata', name: 'Data',            bytes: 0,  width: 18, ghost: true, fields: ['none yet', 'sent only after', 'the handshake'] }
       ],
       stages: [
-        { on: ['nodata'],                             hold: 2800, caption: 'A SYN carries no application data at all. Its whole job is to agree on how to talk before anything is said.' },
-        { on: ['tcp', 'nodata'],                      hold: 4000, caption: 'The TCP header is where the ports live. Destination port 80 names the program on the server (a web server). Source port 49832 was picked at random by the client so replies find the right program on its side. The SYN flag is on and the sequence number starts at a random value.' },
-        { on: ['tcp', 'opts', 'nodata'],              hold: 3400, caption: '20 bytes of options ride along on a SYN: the biggest segment I can take (MSS 1460), window scaling, selective ACK and timestamps. The other side answers with its own.' },
-        { on: ['ip', 'tcp', 'opts', 'nodata'],        hold: 3400, caption: 'IP adds the addresses of the two machines and protocol 6, which tells the receiver "a TCP segment is inside". Addresses find the machine; ports find the program.' },
-        { on: ['eth', 'ip', 'tcp', 'opts'],           hold: 3600, caption: 'Ethernet adds the MACs for this hop on the LAN. The finished SYN is 74 bytes: 14 + 20 + 20 + 20, and not a single byte of data. On the wire.' },
-        { on: ['eth', 'ip', 'tcp', 'opts'], done: true, hold: 2800, caption: 'Sent. The server answers from port 80 back to port 49832 with a SYN-ACK built the same way, and only after the third packet does real data start to flow.' }
+        { on: ['nodata'],                             hold: 2800, caption: { s: 'A hello packet carries no data at all. Its only job is to agree on how to talk.', m: 'A SYN carries no application data at all. Its whole job is to agree on how to talk before anything is said.', e: 'Zero payload: a SYN segment carries no application data.' } },
+        { on: ['tcp', 'nodata'],                      hold: 4000, caption: { s: 'The TCP layer holds the port numbers: 80 names the web server, and 49832 is a random number the client made up so replies find their way back.', m: 'The TCP header is where the ports live. Destination port 80 names the program on the server (a web server). Source port 49832 was picked at random by the client so replies find the right program on its side. The SYN flag is on and the sequence number starts at a random value.', e: 'TCP header, 20 bytes: source port 49832, destination port 80, ISN 3231822531, flags SYN, window 64240, checksum.' } },
+        { on: ['tcp', 'opts', 'nodata'],              hold: 3400, caption: { s: 'A few extra settings ride along: the biggest chunk each side can accept, and so on.', m: '20 bytes of options ride along on a SYN: the biggest segment I can take (MSS 1460), window scaling, selective ACK and timestamps. The other side answers with its own.', e: 'Options, 20 bytes: MSS 1460, SACK permitted, timestamps, NOP, window scale 7.' } },
+        { on: ['ip', 'tcp', 'opts', 'nodata'],        hold: 3400, caption: { s: 'IP adds the addresses of the two computers. Addresses find the machine; ports find the program.', m: 'IP adds the addresses of the two machines and protocol 6, which tells the receiver "a TCP segment is inside". Addresses find the machine; ports find the program.', e: 'IPv4 header, 20 bytes: protocol 6, TTL 64, DF set, total length 60.' } },
+        { on: ['eth', 'ip', 'tcp', 'opts'],           hold: 3600, caption: { s: 'Ethernet adds the card numbers for this hop. 74 bytes, and not one byte of data. On the wire.', m: 'Ethernet adds the MACs for this hop on the LAN. The finished SYN is 74 bytes: 14 + 20 + 20 + 20, and not a single byte of data. On the wire.', e: 'Ethernet header, 14 bytes, EtherType 0x0800: 74 bytes on the wire (14 + 20 + 20 + 20).' } },
+        { on: ['eth', 'ip', 'tcp', 'opts'], done: true, hold: 2800, caption: { s: 'Sent. The server answers with its own hello, and only after the third packet can data flow.', m: 'Sent. The server answers from port 80 back to port 49832 with a SYN-ACK built the same way, and only after the third packet does real data start to flow.', e: 'Sent. The SYN-ACK returns from 80 to 49832 with ack = ISN + 1; data can flow after the third segment.' } }
       ]
     },
 
@@ -197,11 +210,11 @@
         { id: 'pad',  name: 'Padding',         bytes: 18, width: 16, fields: ['18 zero bytes', 'up to the 60-byte', 'Ethernet minimum'] }
       ],
       stages: [
-        { on: ['arp'],                 hold: 3600, caption: 'The question: "Who has 192.168.110.1? Tell 192.168.110.50." The sender fills in its own MAC and IP. The target MAC is all zeros: that is the blank it wants filled in.' },
-        { on: ['noip', 'arp'],         hold: 3800, caption: 'There is no IP header. ARP is not carried inside IP; it is the tool that makes IP delivery possible on a LAN, so it sits directly inside the Ethernet frame. No IP addresses in the outer packet, no TTL, no ports.' },
-        { on: ['eth', 'arp'],          hold: 3800, caption: 'Ethernet adds its header with type 0x0806, which means "ARP inside", and destination ff:ff:ff:ff:ff:ff. It has to be broadcast: the whole point is that the sender does not yet know the MAC it wants.' },
-        { on: ['eth', 'arp', 'pad'],   hold: 3400, caption: '14 + 28 = 42 bytes is below the 60-byte minimum an Ethernet frame must have, so 18 zero bytes are added at the end. That is why every ARP packet in the capture shows as 60 bytes.' },
-        { on: ['eth', 'arp', 'pad'], done: true, hold: 2800, caption: 'Every machine on the LAN reads it. Only 192.168.110.1 answers, and its reply goes straight back to 00:0c:29:4b:1f:a2, not broadcast, with the blank filled in.' }
+        { on: ['arp'],                 hold: 3600, caption: { s: 'The question: "Who has 192.168.110.1? Tell 192.168.110.50." The blank to fill in is the card number of .1.', m: 'The question: "Who has 192.168.110.1? Tell 192.168.110.50." The sender fills in its own MAC and IP. The target MAC is all zeros: that is the blank it wants filled in.', e: 'ARP payload, 28 bytes: hardware type 1, protocol 0x0800, lengths 6 and 4, opcode 1, sender 00:0c:29:4b:1f:a2 / 192.168.110.50, target 00:00:00:00:00:00 / 192.168.110.1.' } },
+        { on: ['noip', 'arp'],         hold: 3800, caption: { s: 'There is no IP layer at all. ARP is the helper that makes IP delivery possible, so it goes straight into the frame.', m: 'There is no IP header. ARP is not carried inside IP; it is the tool that makes IP delivery possible on a LAN, so it sits directly inside the Ethernet frame. No IP addresses in the outer packet, no TTL, no ports.', e: 'No IPv4 header: ARP has its own EtherType and is not an IP payload.' } },
+        { on: ['eth', 'arp'],          hold: 3800, caption: { s: 'Ethernet adds its header, marked "ARP inside" and addressed to everyone, because nobody knows the answer yet.', m: 'Ethernet adds its header with type 0x0806, which means "ARP inside", and destination ff:ff:ff:ff:ff:ff. It has to be broadcast: the whole point is that the sender does not yet know the MAC it wants.', e: 'Ethernet header: destination ff:ff:ff:ff:ff:ff, source 00:0c:29:4b:1f:a2, EtherType 0x0806.' } },
+        { on: ['eth', 'arp', 'pad'],   hold: 3400, caption: { s: '42 bytes is smaller than a frame is allowed to be, so zeros are added at the end to reach 60.', m: '14 + 28 = 42 bytes is below the 60-byte minimum an Ethernet frame must have, so 18 zero bytes are added at the end. That is why every ARP packet in the capture shows as 60 bytes.', e: '14 + 28 = 42 bytes; 18 bytes of zero padding bring it to the 60-byte minimum (64 with the FCS).' } },
+        { on: ['eth', 'arp', 'pad'], done: true, hold: 2800, caption: { s: 'Every machine reads it. Only 192.168.110.1 answers, straight back to the asker, with the blank filled in.', m: 'Every machine on the LAN reads it. Only 192.168.110.1 answers, and its reply goes straight back to 00:0c:29:4b:1f:a2, not broadcast, with the blank filled in.', e: 'All hosts process it; only 192.168.110.1 replies with opcode 2, unicast to 00:0c:29:4b:1f:a2.' } }
       ]
     }
   };
@@ -230,7 +243,7 @@
           if (on) total += g.bytes;
         });
         el.classList.toggle('done', !!st.done);
-        text.textContent = st.caption;
+        text.textContent = lv(st.caption);
         bytesEl.textContent = total;
         stepEl.textContent = 'step ' + (k + 1) + ' of ' + n;
         Array.prototype.forEach.call(dots, function (d, j) { d.classList.toggle('on', j === k); });
@@ -274,7 +287,7 @@
   /* ---------- right column ---------- */
 
   function renderWelcome() {
-    main.innerHTML =
+    content.innerHTML =
       '<article class="welcome">' +
       '<h1>Packet Lessons</h1>' +
       '<p class="lead">Pick a packet type on the left. Each row is a real capture from the lab network, decoded and explained.</p>' +
@@ -285,6 +298,7 @@
       '<li>Click any packet to open its details, layer by layer.</li>' +
       '<li>Use the <b>Download .pcap</b> button to open the same capture in Wireshark yourself.</li>' +
       '</ol>' +
+      '<p class="hint"><b>Reading level.</b> The <b>Simple</b>, <b>Moderate</b> and <b>Engineer</b> buttons at the top right change how deep every explanation goes. Simple is the big idea in plain words, Moderate is CCNA-student depth, Engineer is the full technical detail kept short. Your choice is remembered on this browser, and a link with <code>?level=simple</code> (or moderate, engineer) opens the site at that level.</p>' +
       '<section id="livenet-section">' +
       '<h2>Your network right now</h2>' +
       '<p class="hint">Live, from the Wi-Fi and wired interfaces of the machine running this site. It refreshes every few seconds, so it changes when you move to another network.</p>' +
@@ -517,10 +531,20 @@
       if (net.assumed.length) h.push('<p class="hint">No DHCP capture found, so these were assumed: ' + esc(net.assumed.join(', ')) + '.</p>');
       if (net.dhcpMask && net.dhcpMask !== net.mask) {
         h.push('<p class="hint">Note: the DHCP Offer and ACK in the capture hand out subnet mask ' + esc(net.dhcpMask) + ' (/' + maskBits(net.dhcpMask) +
-          '). This page uses the configured lab network ' + esc(SITE.labNetwork) + ' instead; open the DHCP packets in row 2 and you will still see the mask the server actually sent.</p>');
+          '). This page uses the configured lab network ' + esc(SITE.labNetwork) + ' instead; open the DHCP packets in {{row:udp}} and you will still see the mask the server actually sent.</p>');
       }
       box.innerHTML = h.join('');
     });
+  }
+
+  function sectionHtml(s) {
+    var h = ['<section><h2>' + esc(s.h) + '</h2>'];
+    lv(s.p || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
+    if (s.steps) { h.push('<ol class="steps">'); lv(s.steps).forEach(function (t) { h.push('<li>' + t + '</li>'); }); h.push('</ol>'); }
+    if (s.anim && ANIMATIONS[s.anim]) h.push(assemblyHtml(s.anim, ANIMATIONS[s.anim]));
+    lv(s.after || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
+    h.push('</section>');
+    return h.join('');
   }
 
   function renderLesson(lesson, index) {
@@ -528,19 +552,13 @@
     h.push('<article class="lesson" id="lesson-' + lesson.id + '">');
     h.push('<p class="crumb">Row ' + (index + 1) + ' of ' + LESSONS.length + '</p>');
     h.push('<h1>' + esc(lesson.title) + ' <small>' + esc(lesson.subtitle) + '</small></h1>');
-    h.push('<p class="lead">' + esc(lesson.oneLiner) + '</p>');
-    h.push('<div class="facts"><div><span class="k">Where it lives</span><span class="v">' + esc(lesson.layer) + '</span></div>');
+    h.push('<p class="lead">' + esc(lv(lesson.oneLiner)) + '</p>');
+    h.push('<div class="facts"><div><span class="k">Where it lives</span><span class="v">' + esc(lv(lesson.layer)) + '</span></div>');
     h.push('<div><span class="k">Command that made this capture</span><span class="v"><code>' + esc(lesson.command) + '</code></span></div></div>');
-    lesson.sections.forEach(function (s) {
-      h.push('<section><h2>' + esc(s.h) + '</h2>');
-      s.p.forEach(function (p) { h.push('<p>' + p + '</p>'); });
-      if (s.anim && ANIMATIONS[s.anim]) h.push(assemblyHtml(s.anim, ANIMATIONS[s.anim]));
-      (s.after || []).forEach(function (p) { h.push('<p>' + p + '</p>'); });
-      h.push('</section>');
-    });
+    lesson.sections.forEach(function (s) { h.push(sectionHtml(s)); });
     h.push('<section><h2>The conversation, step by step</h2><div class="diagram">' + diagram(lesson) + '</div></section>');
     h.push('<section><h2>What to look for in this capture</h2><ul class="lookfor">');
-    lesson.lookFor.forEach(function (t) { h.push('<li>' + esc(t) + '</li>'); });
+    lv(lesson.lookFor).forEach(function (t) { h.push('<li>' + esc(t) + '</li>'); });
     h.push('</ul></section>');
     if (lesson.reassemble) h.push('<section id="reassembled"></section>');
     h.push('<section class="packets"><div class="packets-head"><h2>The packets</h2>' +
@@ -548,7 +566,7 @@
       '<p class="hint">Click a packet to expand its details. File: <code>' + esc(lesson.file) + '</code></p>' +
       '<div id="table" class="table-wrap"><p class="loading">Loading capture...</p></div></section>');
     h.push('</article>');
-    main.innerHTML = h.join('');
+    content.innerHTML = h.join('');
     main.scrollTop = 0;
     startAnimations();
     loadPackets(lesson);
@@ -662,6 +680,8 @@
   buildMenu();
   buildNav();
   (function () { var c = document.getElementById('net-cidr'); if (c) c.textContent = SITE.labNetwork; })();
+  window.rerender = function () { var y = main.scrollTop; route(); main.scrollTop = y; };
+  wireLevelBar(document.getElementById('level-bar'));
   window.addEventListener('hashchange', route);
   route();
 })();
