@@ -32,7 +32,7 @@ var SITE = {
   /* Top menu. href null = not built yet (shown greyed out, "coming soon");
    * current: true marks the site you are on. */
   menu: [
-    { label: 'Frames & Packets', href: null },
+    { label: 'Frames & Packets', href: 'https://professorcam.github.io/frames/' },
     { label: 'Protocols', href: '#', current: true },
     { label: 'Encryption and Protocols', href: 'https://professorcam.github.io/encryption/' }
   ]
