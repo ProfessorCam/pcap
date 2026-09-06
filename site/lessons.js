@@ -32,7 +32,7 @@ var SITE = {
   menu: [
     { label: 'Frames & Packets', href: null },
     { label: 'Protocols', href: '#', current: true },
-    { label: 'Encryption and Protocols', href: null }
+    { label: 'Encryption and Protocols', href: 'https://professorcam.github.io/encryption/' }
   ]
 };
 
