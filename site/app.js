@@ -254,6 +254,12 @@
       '<p class="hint">Live, from the Wi-Fi and wired interfaces of the machine running this site. It refreshes every few seconds, so it changes when you move to another network.</p>' +
       '<div id="livenet"><p class="loading">Reading the network interfaces...</p></div>' +
       '</section>' +
+      '<section id="runlocal-section" hidden>' +
+      '<h2>See your own network on this page</h2>' +
+      '<p class="hint">This copy of the site is static, so it cannot look at your interfaces. Run the same site as a Docker container on your own machine and this section turns into a live view of your Wi-Fi or wired IP address, mask, network, broadcast and gateway.</p>' +
+      '<pre class="cmd">docker run -d --name pcap-lessons --network host --restart unless-stopped ' + esc(SITE.image) + '</pre>' +
+      '<p class="hint">Then open <a href="http://localhost:' + SITE.port + '/">http://localhost:' + SITE.port + '/</a>. The container listens on port ' + SITE.port + ' with host networking, which is what lets it see the real interfaces. If you cannot use host networking (Docker Desktop on Mac or Windows without it enabled), <code>-p ' + SITE.port + ':' + SITE.port + '</code> instead of <code>--network host</code> still serves the lessons, but the live section will only see Docker\'s own network. Stop it with <code>docker rm -f pcap-lessons</code>.</p>' +
+      '</section>' +
       '<h2>' + esc(SITE.labName) + '</h2>' +
       '<p class="hint">The lab network the captures were recorded on: ' + esc(SITE.labNetwork) + '. The hosts below are not typed in by hand; the page reads every capture and works them out from the packets themselves.</p>' +
       '<div id="labnet"><p class="loading">Reading the captures...</p></div>' +
@@ -352,7 +358,10 @@
         .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(function (info) { renderLiveNetwork(info); shown = true; })
         .catch(function () {
-          if (!shown) { var sec = document.getElementById('livenet-section'); if (sec) sec.hidden = true; }
+          if (!shown) {
+            var sec = document.getElementById('livenet-section'); if (sec) sec.hidden = true;
+            var run = document.getElementById('runlocal-section'); if (run && SITE.image) run.hidden = false;
+          }
         })
         .then(function () { var sec = document.getElementById('livenet-section'); if (sec && !sec.hidden) liveTimer = setTimeout(tick, 5000); });
     }

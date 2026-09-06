@@ -24,6 +24,16 @@ docker compose up -d --build
 
 Then open <http://localhost:8080>. Stop it with `docker compose down`.
 
+Or run the published image from Docker Hub without cloning anything:
+
+```sh
+docker run -d --name pcap-lessons --network host --restart unless-stopped professorcam/pcap
+```
+
+The GitHub Pages copy shows this same command in place of the live network section, since a
+static host cannot look at the visitor's interfaces. The image name and port are set in
+`SITE.image` / `SITE.port` in `site/lessons.js`.
+
 The container runs with `network_mode: host` so it can see the machine's real Wi-Fi and wired
 interfaces (see below). That means nginx listens on port 8080 of the host directly; change
 `listen 8080;` in `nginx.conf` if that port is taken. Host networking is native on Linux; on
